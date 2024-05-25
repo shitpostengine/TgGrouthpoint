@@ -1,5 +1,0 @@
-host = '127.0.0.1'
-user = 'postgres'
-password = 'admin1'
-db_name = 'grouth'
-token = '7081711934:AAEz1GSMSHml1tsOlp3b5JnsC_KgArEFfJY'
