@@ -20,9 +20,7 @@ try:
             questions = cursor.fetchall()  # Получаем все вопросы из базы данных
             return [question[0] for question in questions]
         questions = get_questions()
-        #def get_questions2():
-        #answer = cursor.fetchall()
-        #print(cursor.fetchall())
+
 except Exception as _ex:
     print('[INFO] Error while working with Postgresql', _ex)
 finally:
@@ -51,8 +49,13 @@ def faq_all_btn(call):
         btn = types.InlineKeyboardButton(text=question, callback_data='answer_' + str(question_id))# Присваиваем каждой кнопке уникальный callback_data
         markup.add(btn)
     bot.send_message(chat_id, f'Какой тип вопросов вам подходит?', reply_markup=markup)
+
+
 @bot.callback_query_handler(func=lambda call: 'answer_' in call.data)
-def faq_theme_btn(call):
+def faq_theme_questions_btn(call):
+    question_id = 0
+    markup = types.InlineKeyboardMarkup()
+    message = call.message
     question_number = call.data[-1]
     connection = psycopg2.connect(
         host=host,
@@ -60,8 +63,39 @@ def faq_theme_btn(call):
         password=password,
         database=db_name
     )
-    with connection.cursor() as cursor:
-        cursor.execute(f"SELECT questions FROM faq_ans WHERE type_id1 = '{question_number}';")
-        questions2 = cursor.fetchall()
-        print(questions2)
+    try:
+        connection = psycopg2.connect(
+            host=host,
+            user=user,
+            password=password,
+            database=db_name
+        )
+
+        with connection.cursor() as cursor:
+            def get_questions1():
+                cursor.execute(f"SELECT questions FROM faq_ans WHERE type_id1 = '{question_number}';")
+                questions2 = cursor.fetchall()  # Получаем все вопросы из базы данных
+                return [question[0] for question in questions2]
+
+            questions = get_questions1()
+
+    except Exception as _ex:
+        print('[INFO] Error while working with Postgresql  (2)', _ex)
+    finally:
+        if connection:
+            connection.close()
+            print('[INFO] PostgreSQL connection closed  (2)')
+    for question in questions:
+        question_id += 1
+        btn = types.InlineKeyboardButton(text=question, callback_data='answer1_' + str(question_id))  # Присваиваем каждой кнопке уникальный callback_data
+        markup.add(btn)
+    chat_id = message.chat.id
+    bot.send_message(chat_id, f'Какой вопрос вам подходит?', reply_markup=markup)
+    # if connection:
+    #     connection.close()
+    #     print('[INFO] PostgreSQL connection closed')
+
+
+
+
 bot.polling(none_stop = True)
