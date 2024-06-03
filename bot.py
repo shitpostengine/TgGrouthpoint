@@ -3,8 +3,7 @@ import telebot
 from telebot import types     #для указание типов
 from config import host, user, password, db_name, token
 bot = telebot.TeleBot(token)
-
-answer = [] #переменная для ответов из бд
+answers = []
 
 try:
     connection = psycopg2.connect(
@@ -63,39 +62,49 @@ def faq_theme_questions_btn(call):
         password=password,
         database=db_name
     )
-    try:
-        connection = psycopg2.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=db_name
-        )
 
-        with connection.cursor() as cursor:
-            def get_questions1():
-                cursor.execute(f"SELECT questions FROM faq_ans WHERE type_id1 = '{question_number}';")
-                questions2 = cursor.fetchall()  # Получаем все вопросы из базы данных
-                return [question[0] for question in questions2]
+    with connection.cursor() as cursor:
+        def get_questions1():
+            cursor.execute(f"SELECT questions FROM faq_ans WHERE type_id1 = '{question_number}';")
+            questions2 = cursor.fetchall()  # Получаем все вопросы из базы данных
+            return [question[0] for question in questions2]
 
-            questions = get_questions1()
+        questions1 = get_questions1()
+    connection.close()
+    print('[INFO] PostgreSQL connection closed  (2.0)')
 
-    except Exception as _ex:
-        print('[INFO] Error while working with Postgresql  (2)', _ex)
-    finally:
-        if connection:
-            connection.close()
-            print('[INFO] PostgreSQL connection closed  (2)')
-    for question in questions:
+    # except Exception as _ex:
+    #     print('[INFO] Error while working with Postgresql  (2.0)', _ex)
+    # finally:
+    #     if connection:
+    #         connection.close()
+    #         print('[INFO] PostgreSQL connection closed  (2.0)')
+    connection = psycopg2.connect(
+        host=host,
+        user=user,
+        password=password,
+        database=db_name
+    )
+
+    with connection.cursor() as cursor:
+        global answers
+        cursor.execute(f"SELECT answers FROM faq_ans WHERE type_id1 = '{question_number}';")
+        answers = cursor.fetchall()  # Получаем все ответы из базы данных
+        connection.close()
+    print('[INFO] PostgreSQL connection closed  (2.1)')
+    for question1 in questions1:
         question_id += 1
-        btn = types.InlineKeyboardButton(text=question, callback_data='answer1_' + str(question_id))  # Присваиваем каждой кнопке уникальный callback_data
+        btn = types.InlineKeyboardButton(text=question1, callback_data='answer1_' + str(question_id))  # Присваиваем каждой кнопке уникальный callback_data
         markup.add(btn)
     chat_id = message.chat.id
     bot.send_message(chat_id, f'Какой вопрос вам подходит?', reply_markup=markup)
-    # if connection:
-    #     connection.close()
-    #     print('[INFO] PostgreSQL connection closed')
 
-
-
+@bot.callback_query_handler(func=lambda call: 'answer1_' in call.data)
+def faq_answers(call):
+    message = call.message
+    chat_id = message.chat.id
+    question_number = int(call.data[-1])-1
+    correct_answer = answers[question_number-1]
+    bot.send_message(chat_id, correct_answer)#, reply_markup=markup)
 
 bot.polling(none_stop = True)
