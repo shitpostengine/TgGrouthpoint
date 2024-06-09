@@ -5,7 +5,7 @@ from config import host, user, password, db_name, token, admin
 bot = telebot.TeleBot(token)
 answers = []
 question_number = 0
-file = open('packages\grouth_point.png', 'rb')
+back_btn_stack = []
 
 
 try:
@@ -32,10 +32,12 @@ finally:
 
 @bot.message_handler(commands = ['start'])
 def start(message):
+    file = open('packages\grouth_point.png', 'rb')
     markup = types.InlineKeyboardMarkup()
     btn = types.InlineKeyboardButton(text='Продолжить', callback_data='start')
     markup.add(btn)
     bot.send_photo(message.chat.id, file, 'Привет, {0.first_name}! Это бот Точки роста ❤️!'.format(message.from_user), reply_markup=markup)
+    #print(message)
 
 @bot.callback_query_handler(func=lambda call: call.data == 'start')
 def main_menu(call):
@@ -60,14 +62,11 @@ def faq_all_btn(call):
     markup.add(btn_start)
     bot.send_message(chat_id, 'Какой тип вопросов вам подходит? 👀', reply_markup=markup)
 
-# @bot.callback_query_handler(func=lambda call: call.data == 'start')
-# def go_to_start(call):
-#     start(call.message)
-#     print (call.message)
 
 @bot.callback_query_handler(func=lambda call: 'answer_' in call.data)
 def faq_theme_questions_btn(call):
     global question_number
+    back_btn_stack.append(call.data)
     question_id = 0
     markup = types.InlineKeyboardMarkup()
     message = call.message
@@ -92,7 +91,6 @@ def faq_theme_questions_btn(call):
 
     for question1 in questions1:
         question_id += 1
-        print(question1)
         connection = psycopg2.connect(
             host=host,
             user=user,
@@ -112,13 +110,11 @@ def faq_theme_questions_btn(call):
     btn = types.InlineKeyboardButton(text='Назад ↩️', callback_data='faq_all')
     markup.add(btn)
     bot.send_message(chat_id, f'Какой вопрос вам подходит? ❓', reply_markup=markup)
-    print(call.data)
 
 @bot.callback_query_handler(func=lambda call: 'answer1_' in call.data)
 def faq_answers(call):
     question_number1 = call.data[-1]
     markup = types.InlineKeyboardMarkup()
-    print(call.data, type(question_number1))
     connection = psycopg2.connect(
         host=host,
         user=user,
